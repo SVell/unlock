@@ -1,13 +1,11 @@
 import { Button, Tooltip, Icon } from '@unlock-protocol/ui'
 import { FaEthereum as EthereumIcon } from 'react-icons/fa'
-import { useActor } from '@xstate/react'
+import { useActor, useSelector } from '@xstate/react'
 import { ReactNode, useEffect, useMemo, useState } from 'react'
 import { useAuth } from '~/contexts/AuthenticationContext'
 import { useAuthenticate } from '~/hooks/useAuthenticate'
 import { addressMinify } from '~/utils/strings'
 import SvgComponents from '../svg'
-import { CheckoutService } from './main/checkoutMachine'
-import { ConnectService } from './Connect/connectMachine'
 import { SiBrave as BraveWalletIcon } from 'react-icons/si'
 import { DownloadWallet } from '../DownloadWallet'
 import { detectInjectedProvider } from '~/utils/wallet'
@@ -183,7 +181,7 @@ export function Connected({
   injectedProvider,
   children,
 }: ConnectedCheckoutProps) {
-  const [state, send] = useActor<CheckoutService>(service as CheckoutService)
+  const state = useSelector(service, (state) => state)
   const { account, email, isUnlockAccount, deAuthenticate, connected } =
     useAuth()
   const [signing, setSigning] = useState(false)
@@ -273,7 +271,7 @@ export function Connected({
       <SignedOut
         injectedProvider={injectedProvider}
         onUnlockAccount={() => {
-          send('UNLOCK_ACCOUNT')
+          service.send({ type: 'UNLOCK_ACCOUNT' })
         }}
         authenticateWithProvider={authenticateWithProvider}
         title="Have a crypto wallet?"

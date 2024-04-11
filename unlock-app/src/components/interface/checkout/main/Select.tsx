@@ -1,8 +1,8 @@
-import { CheckoutService, LockState } from './checkoutMachine'
+import { LockState, checkoutMachine } from './checkoutMachine'
 import { useConfig } from '~/utils/withConfig'
 import { Connected } from '../Connected'
 import { LockOptionPlaceholder, Pricing } from '../Lock'
-import { useActor } from '@xstate/react'
+import { useActor, useActorRef, useSelector } from '@xstate/react'
 import { useAuth } from '~/contexts/AuthenticationContext'
 import { useWeb3Service } from '~/utils/withWeb3Service'
 import { PoweredByUnlock } from '../PoweredByUnlock'
@@ -32,7 +32,9 @@ import { AiFillWarning as WarningIcon } from 'react-icons/ai'
 import { useGetLockProps } from '~/hooks/useGetLockProps'
 interface Props {
   injectedProvider: unknown
-  checkoutService: CheckoutService
+  //@ts-ignore
+  checkoutService: any
+  state: any
 }
 
 interface LockOptionProps {
@@ -187,9 +189,9 @@ const LockOption = ({ disabled, lock }: LockOptionProps) => {
   )
 }
 
-export function Select({ checkoutService, injectedProvider }: Props) {
-  const [state, send] = useActor(checkoutService)
-  const { paywallConfig, lock: selectedLock } = state.context
+export function Select({ checkoutService, state, injectedProvider }: Props) {
+  const { paywallConfig, lock: selectedLock } = state.context.input
+
   const [lock, setLock] = useState<LockState | undefined>(selectedLock)
 
   const { isLoading: isLocksLoading, data: locks } = useQuery(
@@ -346,7 +348,7 @@ export function Select({ checkoutService, injectedProvider }: Props) {
       return
     }
 
-    send({
+    checkoutService.send({
       type: 'SELECT_LOCK',
       lock,
       existingMember: !!membership?.member,
@@ -365,7 +367,7 @@ export function Select({ checkoutService, injectedProvider }: Props) {
     skipQuantity,
     skipRecipient,
     isUnlockAccount,
-    send,
+    checkoutService,
     skipSelect,
     isLoading,
   ])
@@ -454,7 +456,7 @@ export function Select({ checkoutService, injectedProvider }: Props) {
                   return
                 }
 
-                send({
+                checkoutService.send({
                   type: 'SELECT_LOCK',
                   lock,
                   existingMember: lock.isMember,

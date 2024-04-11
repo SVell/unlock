@@ -1,9 +1,9 @@
 import { useQueries } from '@tanstack/react-query'
 import { networks } from '@unlock-protocol/networks'
 import { HookType } from '@unlock-protocol/types'
-import { useActor } from '@xstate/react'
+import { useActor, useSelector } from '@xstate/react'
 import { useWeb3Service } from '~/utils/withWeb3Service'
-import { CheckoutHookType, CheckoutService } from './checkoutMachine'
+import { CheckoutHookType } from './checkoutMachine'
 
 type LockHookProps = Record<string, CheckoutHookType | undefined>
 const HookIdMapping: Partial<Record<HookType, CheckoutHookType>> = {
@@ -16,12 +16,13 @@ const HookIdMapping: Partial<Record<HookType, CheckoutHookType>> = {
   PASSWORD_CAPPED: 'password',
 }
 
-export function useCheckoutHook(service: CheckoutService) {
-  const [state] = useActor(service)
+// @ts-ignore
+export function useCheckoutHook(service: any) {
+  const state = useSelector(service, (state) => state)
   const web3Service = useWeb3Service()
 
   let lockHookMapping: LockHookProps = {}
-  const { paywallConfig } = state.context
+  const { paywallConfig } = state.context.input
 
   const queries = useQueries({
     queries: [

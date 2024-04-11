@@ -1,15 +1,11 @@
-import { useActor } from '@xstate/react'
+import { useActor, useSelector } from '@xstate/react'
 import { StepItem } from '../Stepper'
-import {
-  CheckoutHookType,
-  CheckoutMachineContext,
-  CheckoutService,
-} from './checkoutMachine'
+import { CheckoutHookType, CheckoutMachineContext } from './checkoutMachine'
 import { UnlockAccountService } from '../UnlockAccount/unlockAccountMachine'
 import { shouldSkip } from './utils'
 
 export function useStepperItems(
-  service: CheckoutService | UnlockAccountService,
+  service: any | UnlockAccountService,
   {
     isUnlockAccount,
     hookType,
@@ -22,7 +18,7 @@ export function useStepperItems(
     existingMember?: boolean
   } = {}
 ) {
-  const [state] = useActor(service)
+  const state = useSelector(service, (state) => state)
   if (isUnlockAccount) {
     return [
       {
@@ -46,7 +42,7 @@ export function useStepperItems(
     existingMember,
     payment,
     renew,
-  } = state.context as CheckoutMachineContext
+  } = state.context.input as CheckoutMachineContext
   if (!paywallConfig.locks || Object.keys(paywallConfig.locks).length === 0) {
     return []
   }

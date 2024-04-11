@@ -2,7 +2,7 @@ import React, { useCallback, useMemo } from 'react'
 import { useCheckoutCommunication } from '~/hooks/useCheckoutCommunication'
 import type { OAuthConfig } from '~/unlockTypes'
 import { ConfirmConnect } from './Confirm'
-import { useActor, useInterpret } from '@xstate/react'
+import { useActor, useActorRef, useSelector } from '@xstate/react'
 import { connectMachine } from './connectMachine'
 import { UnlockAccountSignIn } from './UnlockAccountSignIn'
 import { TopNavigation } from '../Shell'
@@ -18,14 +18,14 @@ export function Connect({
   oauthConfig,
   communication,
 }: Props) {
-  const connectService = useInterpret(connectMachine)
-  const [state, send] = useActor(connectService)
+  const connectService = useActorRef(connectMachine)
+  const state = useSelector(connectService, (state) => state)
   const matched = state.value.toString()
 
   const onClose = useCallback(
     (params: Record<string, string> = {}) => {
       // Reset the Paywall State!
-      send('DISCONNECT')
+      connectService.send({ type: 'DISCONNECT' })
 
       if (oauthConfig.redirectUri) {
         const redirectURI = new URL(oauthConfig.redirectUri)
@@ -40,7 +40,7 @@ export function Connect({
         communication.emitCloseModal()
       }
     },
-    [oauthConfig.redirectUri, communication, send]
+    [oauthConfig.redirectUri, communication]
   )
 
   const onBack = useMemo(() => {
@@ -48,12 +48,12 @@ export function Connect({
     const canBackInUnlockAccountService = unlockAccount
       ?.getSnapshot()
       .can('BACK')
-    const canBack = state.can('BACK')
+    const canBack = state.can({ type: 'BACK' })
     if (canBackInUnlockAccountService) {
       return () => unlockAccount.send('BACK')
     }
     if (canBack) {
-      return () => connectService.send('BACK')
+      return () => connectService.send({ type: 'BACK' })
     }
     return undefined
   }, [state, connectService])

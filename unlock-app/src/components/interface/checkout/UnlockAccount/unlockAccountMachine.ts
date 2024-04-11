@@ -1,4 +1,4 @@
-import { createMachine, assign, InterpreterFrom, ActorRefFrom } from 'xstate'
+import { createMachine, assign, ActorRefFrom } from 'xstate'
 
 interface SubmitUserEvent {
   type: 'SUBMIT_USER'
@@ -35,10 +35,9 @@ interface UnlockAccountMachineContext {
 
 export const unlockAccountMachine = createMachine(
   {
-    predictableActionArguments: true, // https://xstate.js.org/docs/guides/actions.html
     id: 'unlockAccount',
-    tsTypes: {} as import('./unlockAccountMachine.typegen').Typegen0,
-    schema: {
+    types: {
+      typegen: {} as import('./unlockAccountMachine.typegen').Typegen0,
       events: {} as UnlockAccountMachineEvents,
       context: {} as UnlockAccountMachineContext,
     },
@@ -47,9 +46,7 @@ export const unlockAccountMachine = createMachine(
       email: '',
       existingUser: false,
     },
-    on: {
-      EXIT: 'EXIT',
-    },
+
     states: {
       ENTER_EMAIL: {
         on: {
@@ -59,11 +56,11 @@ export const unlockAccountMachine = createMachine(
           CONTINUE: [
             {
               target: 'SIGN_IN',
-              cond: 'isExistingUser',
+              guard: 'isExistingUser',
             },
             {
               target: 'SIGN_UP',
-              cond: 'isNotExistingUser',
+              guard: 'isNotExistingUser',
             },
           ],
           BACK: 'EXIT',
@@ -90,6 +87,7 @@ export const unlockAccountMachine = createMachine(
   },
   {
     actions: {
+      // @ts-ignore
       submitUser: assign((_, { email, existingUser }) => {
         return {
           email,
@@ -98,11 +96,11 @@ export const unlockAccountMachine = createMachine(
       }),
     },
     guards: {
-      isExistingUser: (ctx) => {
-        return ctx.existingUser && !!ctx.email
+      isExistingUser: ({ context }) => {
+        return context.existingUser && !!context.email
       },
-      isNotExistingUser: (ctx) => {
-        return !ctx.existingUser && !!ctx.email
+      isNotExistingUser: ({ context }) => {
+        return !context.existingUser && !!context.email
       },
     },
   }
@@ -113,6 +111,4 @@ export interface UserDetails {
   password: string
 }
 
-export type UnlockAccountService =
-  | InterpreterFrom<typeof unlockAccountMachine>
-  | ActorRefFrom<typeof unlockAccountMachine>
+export type UnlockAccountService = ActorRefFrom<typeof unlockAccountMachine>

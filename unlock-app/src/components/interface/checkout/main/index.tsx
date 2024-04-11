@@ -8,7 +8,7 @@ import { Confirm } from './Confirm'
 import { MessageToSign } from './MessageToSign'
 import { Minting } from './Minting'
 import { CardPayment } from './CardPayment'
-import { useActor, useInterpret } from '@xstate/react'
+import { useActor, useActorRef, useSelector } from '@xstate/react'
 import { UnlockAccountSignIn } from './UnlockAccountSignIn'
 import { Captcha } from './Captcha'
 import { Returning } from './Returning'
@@ -21,6 +21,7 @@ import { CheckoutHead, TopNavigation } from '../Shell'
 import { PaywallConfigType } from '@unlock-protocol/core'
 import { Guild } from './Guild'
 import { Gitcoin } from './Gitcoin'
+import { createActor } from 'xstate'
 interface Props {
   injectedProvider: any
   paywallConfig: PaywallConfigType
@@ -36,12 +37,14 @@ export function Checkout({
   redirectURI,
   handleClose,
 }: Props) {
-  const checkoutService = useInterpret(checkoutMachine, {
-    context: {
-      paywallConfig,
-    },
-  })
-  const [state] = useActor(checkoutService)
+  console.log('Config')
+  console.log(paywallConfig)
+
+  const checkoutActor = createActor(checkoutMachine, {
+    // @ts-ignore
+    input: { paywallConfig },
+  }).start()
+  const state = useSelector(checkoutActor, (state) => state)
   const { account } = useAuth()
 
   const { mint, messageToSign } = state.context
@@ -53,12 +56,12 @@ export function Checkout({
 
   useEffect(() => {
     if (paywallConfigChanged) {
-      checkoutService.send({
+      checkoutActor.send({
         type: 'UPDATE_PAYWALL_CONFIG',
         config: paywallConfig,
       })
     }
-  }, [paywallConfig, checkoutService, paywallConfigChanged])
+  }, [paywallConfig, state, paywallConfigChanged])
 
   useEffect(() => {
     const user = account ? { address: account } : {}
@@ -70,7 +73,7 @@ export function Checkout({
   const onClose = useCallback(
     (params: Record<string, string> = {}) => {
       // Reset the Paywall State!
-      checkoutService.send('RESET_CHECKOUT')
+      checkoutActor.send({ type: 'RESET_CHECKOUT' })
       if (handleClose) {
         handleClose(params)
       } else if (redirectURI) {
@@ -104,7 +107,7 @@ export function Checkout({
       mint,
       messageToSign,
       paywallConfig.messageToSign,
-      checkoutService,
+      checkoutActor,
     ]
   )
 
@@ -113,15 +116,15 @@ export function Checkout({
     const canBackInUnlockAccountService = unlockAccount
       ?.getSnapshot()
       .can('BACK')
-    const canBack = state.can('BACK')
+    const canBack = state.can({ type: 'BACK' })
     if (canBackInUnlockAccountService) {
       return () => unlockAccount.send('BACK')
     }
     if (canBack) {
-      return () => checkoutService.send('BACK')
+      return () => checkoutActor.send({ type: 'BACK' })
     }
     return undefined
-  }, [state, checkoutService])
+  }, [state])
 
   const Content = useCallback(() => {
     switch (matched) {
@@ -129,7 +132,8 @@ export function Checkout({
         return (
           <Select
             injectedProvider={injectedProvider}
-            checkoutService={checkoutService}
+            checkoutService={checkoutActor}
+            state={state}
           />
         )
       }
@@ -137,7 +141,7 @@ export function Checkout({
         return (
           <Quantity
             injectedProvider={injectedProvider}
-            checkoutService={checkoutService}
+            checkoutService={checkoutActor}
           />
         )
       }
@@ -145,7 +149,7 @@ export function Checkout({
         return (
           <Payment
             injectedProvider={injectedProvider}
-            checkoutService={checkoutService}
+            checkoutService={checkoutActor}
           />
         )
       }
@@ -153,7 +157,7 @@ export function Checkout({
         return (
           <CardPayment
             injectedProvider={injectedProvider}
-            checkoutService={checkoutService}
+            checkoutService={checkoutActor}
           />
         )
       }
@@ -161,7 +165,7 @@ export function Checkout({
         return (
           <Metadata
             injectedProvider={injectedProvider}
-            checkoutService={checkoutService}
+            checkoutService={checkoutActor}
           />
         )
       }
@@ -169,7 +173,7 @@ export function Checkout({
         return (
           <Confirm
             injectedProvider={injectedProvider}
-            checkoutService={checkoutService}
+            checkoutService={checkoutActor}
             communication={communication}
           />
         )
@@ -178,7 +182,7 @@ export function Checkout({
         return (
           <MessageToSign
             injectedProvider={injectedProvider}
-            checkoutService={checkoutService}
+            checkoutService={checkoutActor}
             communication={communication}
           />
         )
@@ -188,7 +192,7 @@ export function Checkout({
           <Minting
             onClose={onClose}
             injectedProvider={injectedProvider}
-            checkoutService={checkoutService}
+            checkoutService={checkoutActor}
             communication={communication}
           />
         )
@@ -197,7 +201,7 @@ export function Checkout({
         return (
           <UnlockAccountSignIn
             injectedProvider={injectedProvider}
-            checkoutService={checkoutService}
+            checkoutService={checkoutActor}
           />
         )
       }
@@ -205,7 +209,7 @@ export function Checkout({
         return (
           <Captcha
             injectedProvider={injectedProvider}
-            checkoutService={checkoutService}
+            checkoutService={checkoutActor}
           />
         )
       }
@@ -213,7 +217,7 @@ export function Checkout({
         return (
           <Guild
             injectedProvider={injectedProvider}
-            checkoutService={checkoutService}
+            checkoutService={checkoutActor}
           />
         )
       }
@@ -221,7 +225,7 @@ export function Checkout({
         return (
           <Password
             injectedProvider={injectedProvider}
-            checkoutService={checkoutService}
+            checkoutService={checkoutActor}
           />
         )
       }
@@ -230,7 +234,7 @@ export function Checkout({
         return (
           <Promo
             injectedProvider={injectedProvider}
-            checkoutService={checkoutService}
+            checkoutService={checkoutActor}
           />
         )
       }
@@ -238,7 +242,7 @@ export function Checkout({
         return (
           <Gitcoin
             injectedProvider={injectedProvider}
-            checkoutService={checkoutService}
+            checkoutService={checkoutActor}
           />
         )
       }
@@ -248,7 +252,7 @@ export function Checkout({
             communication={communication}
             onClose={onClose}
             injectedProvider={injectedProvider}
-            checkoutService={checkoutService}
+            checkoutService={checkoutActor}
           />
         )
       }
@@ -256,7 +260,7 @@ export function Checkout({
         return null
       }
     }
-  }, [injectedProvider, onClose, checkoutService, matched, communication])
+  }, [injectedProvider, onClose, checkoutActor, matched, communication])
 
   return (
     <div className="bg-white z-10  shadow-xl max-w-md rounded-xl flex flex-col w-full h-[90vh] sm:h-[80vh] min-h-[32rem] max-h-[42rem]">

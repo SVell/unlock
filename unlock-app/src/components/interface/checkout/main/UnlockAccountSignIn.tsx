@@ -1,8 +1,12 @@
 import { UnlockAccount } from '../UnlockAccount'
 import { CheckoutService } from './checkoutMachine'
-import { UnlockAccountService } from '../UnlockAccount/unlockAccountMachine'
+import {
+  UnlockAccountService,
+  unlockAccountMachine,
+} from '../UnlockAccount/unlockAccountMachine'
 import { Stepper } from '../Stepper'
 import { Fragment } from 'react'
+import { useActorRef, useSelector } from '@xstate/react'
 interface Props {
   injectedProvider: unknown
   checkoutService: CheckoutService
@@ -12,7 +16,9 @@ export function UnlockAccountSignIn({
   checkoutService,
   injectedProvider,
 }: Props) {
-  const unlockAccountService = checkoutService.state.children
+  const unlockAccountRef = useActorRef(unlockAccountMachine)
+  const state = useSelector(unlockAccountRef, (state) => state)
+  const unlockAccountService = state.children
     .unlockAccount as UnlockAccountService
 
   return (

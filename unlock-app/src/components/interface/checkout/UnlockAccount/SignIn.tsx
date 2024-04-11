@@ -1,9 +1,13 @@
 import { Button, Input } from '@unlock-protocol/ui'
-import { useActor } from '@xstate/react'
+import { useActor, useActorRef, useSelector } from '@xstate/react'
 import { useState } from 'react'
 import { FieldValues, useForm } from 'react-hook-form'
 import { PoweredByUnlock } from '../PoweredByUnlock'
-import { UnlockAccountService, UserDetails } from './unlockAccountMachine'
+import {
+  UnlockAccountService,
+  UserDetails,
+  unlockAccountMachine,
+} from './unlockAccountMachine'
 
 interface Props {
   unlockAccountService: UnlockAccountService
@@ -11,7 +15,8 @@ interface Props {
 }
 
 export function SignIn({ unlockAccountService, signIn }: Props) {
-  const [state, send] = useActor(unlockAccountService)
+  const unlockAccountRef = useActorRef(unlockAccountMachine)
+  const state = useSelector(unlockAccountRef, (state) => state)
   const { email } = state.context
   const {
     register,
@@ -28,7 +33,7 @@ export function SignIn({ unlockAccountService, signIn }: Props) {
         password,
       })
       setIsSigningIn(false)
-      send('CONTINUE')
+      unlockAccountRef.send({ type: 'CONTINUE' })
     } catch (error) {
       if (error instanceof Error) {
         setError(
